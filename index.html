@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Perguntas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        .hidden {
+            display: none;
+        }
+        .container {
+            margin: 20px;
+        }
+        .card {
+            width: 300px;
+            height: 400px;
+            background-color: lightgray;
+            margin: 20px auto;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            backface-visibility: hidden;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .card-content {
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
+        }
+        .card.flip .card-content {
+            transform: rotateY(0deg);
+        }
+        .card.flip img {
+            transform: rotateY(180deg);
+        }
+        #qr-image {
+            width: 150px;
+            height: 150px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ecrã de entrada -->
+    <div id="setup-screen" class="container">
+        <h1>Jogo de Perguntas</h1>
+        <button id="iniciar-sessao">Iniciar Sessão</button>
+        <div id="qr-code" class="hidden">
+            <h2>Partilha este código QR com o jogador:</h2>
+            <img id="qr-image" src="" alt="QR Code">
+        </div>
+    </div>
+
+    <!-- Ecrã de jogo -->
+    <div id="game-screen" class="hidden">
+        <h1>Jogo de Perguntas</h1>
+        <div id="game-container">
+            <div class="card" id="card">
+                <img src="carta-costas.png" alt="Costas do cartão">
+                <div class="card-content">Clique para começar</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const setupScreen = document.getElementById('setup-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const qrCodeDiv = document.getElementById('qr-code');
+        const qrImage = document.getElementById('qr-image');
+        const card = document.querySelector('.card');
+        const cardContent = document.querySelector('.card-content');
+        let perguntas = [];
+        let perguntasUsadas = [];
+        let turno = 0; // 0 -> Jogador A, 1 -> Jogador B
+
+        // Função para carregar perguntas de um ficheiro .txt
+        async function carregarPerguntas() {
+            try {
+                const response = await fetch('perguntas.txt');
+                const text = await response.text();
+                perguntas = text.split('\n').filter(Boolean); // Divide em linhas e remove linhas vazias
+                console.log(perguntas); // Verifica se as perguntas estão carregadas
+            } catch (error) {
+                console.error("Erro ao carregar perguntas:", error);
+            }
+        }
+
+        // Função para alternar jogadores e apresentar perguntas
+        function alternarJogadores() {
+            if (perguntas.length === 0) {
+                alert("Todas as perguntas foram usadas! Fim do jogo.");
+                return;
+            }
+
+            const pergunta = perguntas.splice(Math.floor(Math.random() * perguntas.length), 1)[0]; // Pergunta aleatória
+            perguntasUsadas.push(pergunta);
+            cardContent.innerText = pergunta;
+            turno = (turno + 1) % 2; // Alterna entre 0 e 1
+        }
+
+        // Função para gerar QR Code usando API externa
+        function gerarQRCode(sessionURL) {
+            const qrAPI = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(sessionURL)}`;
+            qrImage.src = qrAPI;
+            qrCodeDiv.classList.remove('hidden'); // Mostrar QR Code
+            console.log("QR Code gerado para URL:", sessionURL); // Verifica o URL gerado
+        }
+
+        // Quando o jogador clica em "Iniciar Sessão"
+        document.getElementById('iniciar-sessao').addEventListener('click', function() {
+            // Gera URL da sessão e o QR Code
+            const sessionURL = `https://3bri1.github.io/EbRep/index.html?sessao=${Math.random().toString(36).substr(2, 9)}`;
+            gerarQRCode(sessionURL);
+
+            // Carregar perguntas e iniciar o jogo
+            carregarPerguntas().then(() => {
+                setupScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+            });
+        });
+
+        // Quando o jogador clica no cartão para passar a vez
+        card.addEventListener('click', function() {
+            alternarJogadores();
+        });
+
+    </script>
+
+</body>
+</html>
